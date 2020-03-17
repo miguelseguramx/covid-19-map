@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Covid-19</title>
+    <style>
+      body{
+        margin: 0;
+      }
+
+      .map{
+        width: 100vw;
+        height: 100vh;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="map" id="map" />
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCRda6Qs-1_6xBUG6ajqndsu3TFpKiJToo"></script>
+    <script type="module"> 
+      import stylesMap from './styles-map.js'
+      
+      const $map = document.querySelector('#map')
+      const map = new window.google.maps.Map($map, {
+        center: {
+          lat: 15,
+          lng: -90,
+        },
+        zoom: 3,
+        styles: stylesMap,
+      })
+
+      renderData()
+
+      async function getData() {
+        const response = await fetch('https://wuhan-coronavirus-api.laeyoung.endpoint.ainize.ai/jhu-edu/latest')
+        const data = await response.json()
+        return data
+      }
+
+      const popup = new window.google.maps.InfoWindow()
+
+      function renderDetails({ confirmed, deaths, recovered, provincestate, countryregion}) {
+        const infected = confirmed - deaths - recovered
+        return `
+          <div>
+            <p> <stong> ${provincestate} - ${countryregion} </strong> </p>
+            <p> Confirmados: ${confirmed} </p>
+            <p> Infectados: ${infected} </p>
+            <p> Muertos: ${deaths} </p>
+            <p> Recuperados: ${recovered} </p>
+          </div>
+        `
+      }
+
+      async function renderData() {
+        const data = await getData()
+        console.log(data)
+        
+        data.forEach(element => {
+          if (element.confirmed > 0) {
+            const marker = new window.google.maps.Marker({
+              position: {
+                lat: element.location.lat,
+                lng: element.location.lng,
+              },
+              map,
+              icon: './Alert.svg'
+            })
+            marker.addListener('click', () => {
+              popup.setContent(renderDetails(element))
+              popup.open(map, marker)
+            })
+          }
+        })
+      }
+    </script>
+  </body>
+</html>
